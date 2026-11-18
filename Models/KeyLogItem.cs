@@ -33,9 +33,28 @@ namespace YMH219_KeyEventLogger.Models
             Timestamp = DateTime.Now;
             EventType = KeyEventType.KeyPress;
             Character = character;
-            KeyName = char.IsControl(character) ? $"[Ctrl+{((int)character)}]" : character.ToString();
+            KeyName = GetCharacterName(character);
             KeyCode = (int)character;
             Modifiers = "Yok";
+        }
+
+        /// <summary>
+        /// KeyPress ile gelen görünmeyen (kontrol) karakterlere okunabilir bir ad verir.
+        /// Örneğin Enter tuşu 13 numaralı karakteri üretir; bu "Ctrl+13" değil "Enter" olarak gösterilir.
+        /// Ctrl+A..Ctrl+Z kombinasyonları ise 1..26 numaralı karakterleri üretir.
+        /// </summary>
+        public static string GetCharacterName(char character)
+        {
+            return character switch
+            {
+                '\r' => "Enter",
+                '\b' => "Backspace",
+                '\t' => "Tab",
+                (char)27 => "Esc",
+                >= (char)1 and <= (char)26 => $"Ctrl+{(char)('A' + character - 1)}",
+                _ when char.IsControl(character) => $"[Kontrol {(int)character}]",
+                _ => character.ToString()
+            };
         }
 
         /// <summary>
