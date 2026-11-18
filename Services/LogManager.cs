@@ -72,38 +72,71 @@ namespace YMH219_KeyEventLogger.Services
         }
 
         /// <summary>
-        /// İstatistik özet metnini üretir.
+        /// Olay türü sayılarını ve en sık basılan tuşları (KeyDown) hesaplar.
+        /// </summary>
+        public KeyStatistics GetStatistics(int topKeyCount = 7)
+        {
+            var topKeys = _logs
+                .Where(l => l.EventType == KeyEventType.KeyDown)
+                .GroupBy(l => l.KeyName)
+                .OrderByDescending(g => g.Count())
+                .Take(topKeyCount)
+                .Select(g => new KeyUsage(g.Key, g.Count()))
+                .ToList();
+
+            return new KeyStatistics(
+                Total: _logs.Count,
+                KeyDownCount: _logs.Count(l => l.EventType == KeyEventType.KeyDown),
+                KeyUpCount: _logs.Count(l => l.EventType == KeyEventType.KeyUp),
+                KeyPressCount: _logs.Count(l => l.EventType == KeyEventType.KeyPress),
+                TopKeys: topKeys);
+        }
+
+        /// <summary>
+        /// İstatistik özet metnini üretir (.txt raporu için).
         /// </summary>
         public string GetStatisticsSummary()
         {
             if (_logs.Count == 0) return "Henüz kaydedilmiş bir klavye olayı bulunmamaktadır.";
 
+            var stats = GetStatistics(topKeyCount: 5);
             var sb = new StringBuilder();
-            sb.AppendLine($"Toplam Olay Sayısı: {_logs.Count}");
-
-            int downCount = _logs.Count(l => l.EventType == KeyEventType.KeyDown);
-            int upCount = _logs.Count(l => l.EventType == KeyEventType.KeyUp);
-            int pressCount = _logs.Count(l => l.EventType == KeyEventType.KeyPress);
-
-            sb.AppendLine($"  - KeyDown: {downCount}");
-            sb.AppendLine($"  - KeyUp: {upCount}");
-            sb.AppendLine($"  - KeyPress: {pressCount}");
+            sb.AppendLine($"Toplam Olay Sayısı: {stats.Total}");
+            sb.AppendLine($"  - KeyDown: {stats.KeyDownCount}");
+            sb.AppendLine($"  - KeyUp: {stats.KeyUpCount}");
+            sb.AppendLine($"  - KeyPress: {stats.KeyPressCount}");
             sb.AppendLine();
             sb.AppendLine("En Sık Kullanılan Tuşlar (Top 5 KeyDown):");
 
-            var topKeys = _logs
-                .Where(l => l.EventType == KeyEventType.KeyDown)
-                .GroupBy(l => l.KeyName)
-                .OrderByDescending(g => g.Count())
-                .Take(5);
-
             int rank = 1;
-            foreach (var group in topKeys)
+            foreach (var usage in stats.TopKeys)
             {
-                sb.AppendLine($"  {rank++}. {group.Key,-12} : {group.Count()} kez");
+                sb.AppendLine($"  {rank++}. {usage.KeyName,-12} : {usage.Count} kez");
             }
 
             return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>
+        /// Bir kaydın arama terimine ve olay türüne uyup uymadığını kontrol eder.
+        /// Hem listeye yeni kayıt eklenirken hem de filtre değiştiğinde aynı kural kullanılır.
+        /// </summary>
+        public static bool Matches(KeyLogItem log, string? searchTerm, KeyEventType? eventTypeFilter)
+        {
+            if (eventTypeFilter.HasValue && log.EventType != eventTypeFilter.Value)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                return true;
+            }
+
+            string term = searchTerm.Trim();
+            return log.KeyName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                   log.Modifiers.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                   log.KeyCode.ToString().Contains(term);
         }
 
         /// <summary>
@@ -111,23 +144,7 @@ namespace YMH219_KeyEventLogger.Services
         /// </summary>
         public IEnumerable<KeyLogItem> FilterLogs(string? searchTerm, KeyEventType? eventTypeFilter)
         {
-            var query = _logs.AsEnumerable();
-
-            if (eventTypeFilter.HasValue)
-            {
-                query = query.Where(l => l.EventType == eventTypeFilter.Value);
-            }
-
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                string term = searchTerm.Trim().ToLowerInvariant();
-                query = query.Where(l =>
-                    l.KeyName.ToLowerInvariant().Contains(term) ||
-                    l.Modifiers.ToLowerInvariant().Contains(term) ||
-                    l.KeyCode.ToString().Contains(term));
-            }
-
-            return query;
+            return _logs.Where(l => Matches(l, searchTerm, eventTypeFilter));
         }
     }
 }

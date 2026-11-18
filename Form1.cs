@@ -1,4 +1,4 @@
-using YMH219_KeyEventLogger.Models;
+﻿using YMH219_KeyEventLogger.Models;
 using YMH219_KeyEventLogger.Services;
 
 namespace YMH219_KeyEventLogger;
@@ -188,53 +188,40 @@ public partial class Form1 : Form
 
     private void AddLogToView(KeyLogItem log)
     {
-        // Filtre kontrolü
-        if (!MatchesCurrentFilter(log)) return;
+        // Yeni kayıt mevcut filtreye uymuyorsa listede gösterilmez (yine de kaydedilir)
+        if (!LogManager.Matches(log, txtSearch.Text, SelectedEventTypeFilter)) return;
 
+        listViewLogs.Items.Add(CreateListViewItem(log));
+        listViewLogs.EnsureVisible(listViewLogs.Items.Count - 1);
+    }
+
+    /// <summary>
+    /// Olay türü açılır listesinde seçili tür; "Tümü" seçiliyse null.
+    /// </summary>
+    private KeyEventType? SelectedEventTypeFilter =>
+        cmbFilterType.SelectedIndex > 0 && Enum.TryParse(cmbFilterType.SelectedItem?.ToString(), out KeyEventType type)
+            ? type
+            : null;
+
+    /// <summary>
+    /// Bir kaydı ListView satırına dönüştürür; olay türüne göre hafif arka plan rengi verir.
+    /// </summary>
+    private static ListViewItem CreateListViewItem(KeyLogItem log)
+    {
         var lvi = new ListViewItem(log.Timestamp.ToString("HH:mm:ss.fff"));
         lvi.SubItems.Add(log.EventType.ToString());
         lvi.SubItems.Add(log.KeyName);
         lvi.SubItems.Add(log.KeyCode.ToString());
         lvi.SubItems.Add(log.Modifiers);
 
-        // Olay türüne göre hafif arka plan tonlaması
-        if (log.EventType == KeyEventType.KeyDown)
+        lvi.BackColor = log.EventType switch
         {
-            lvi.BackColor = Color.FromArgb(245, 250, 255);
-        }
-        else if (log.EventType == KeyEventType.KeyUp)
-        {
-            lvi.BackColor = Color.FromArgb(250, 250, 250);
-        }
-        else if (log.EventType == KeyEventType.KeyPress)
-        {
-            lvi.BackColor = Color.FromArgb(240, 255, 240);
-        }
+            KeyEventType.KeyDown => Color.FromArgb(245, 250, 255),
+            KeyEventType.KeyUp => Color.FromArgb(250, 250, 250),
+            _ => Color.FromArgb(240, 255, 240)
+        };
 
-        listViewLogs.Items.Add(lvi);
-        listViewLogs.EnsureVisible(listViewLogs.Items.Count - 1);
-    }
-
-    private bool MatchesCurrentFilter(KeyLogItem log)
-    {
-        // Olay türü filtresi
-        if (cmbFilterType.SelectedIndex > 0)
-        {
-            string selected = cmbFilterType.SelectedItem?.ToString() ?? "";
-            if (log.EventType.ToString() != selected) return false;
-        }
-
-        // Metin arama filtresi
-        string query = txtSearch.Text.Trim();
-        if (!string.IsNullOrEmpty(query))
-        {
-            bool matches = log.KeyName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                           log.Modifiers.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                           log.KeyCode.ToString().Contains(query);
-            if (!matches) return false;
-        }
-
-        return true;
+        return lvi;
     }
 
     private void FilterChanged(object? sender, EventArgs e)
@@ -242,25 +229,9 @@ public partial class Form1 : Form
         listViewLogs.BeginUpdate();
         listViewLogs.Items.Clear();
 
-        foreach (var log in _logManager.Logs)
+        foreach (var log in _logManager.FilterLogs(txtSearch.Text, SelectedEventTypeFilter))
         {
-            if (MatchesCurrentFilter(log))
-            {
-                var lvi = new ListViewItem(log.Timestamp.ToString("HH:mm:ss.fff"));
-                lvi.SubItems.Add(log.EventType.ToString());
-                lvi.SubItems.Add(log.KeyName);
-                lvi.SubItems.Add(log.KeyCode.ToString());
-                lvi.SubItems.Add(log.Modifiers);
-
-                if (log.EventType == KeyEventType.KeyDown)
-                    lvi.BackColor = Color.FromArgb(245, 250, 255);
-                else if (log.EventType == KeyEventType.KeyUp)
-                    lvi.BackColor = Color.FromArgb(250, 250, 250);
-                else
-                    lvi.BackColor = Color.FromArgb(240, 255, 240);
-
-                listViewLogs.Items.Add(lvi);
-            }
+            listViewLogs.Items.Add(CreateListViewItem(log));
         }
 
         listViewLogs.EndUpdate();
@@ -268,30 +239,21 @@ public partial class Form1 : Form
 
     private void UpdateStatisticsUI()
     {
-        int total = _logManager.Logs.Count;
-        int down = _logManager.Logs.Count(l => l.EventType == KeyEventType.KeyDown);
-        int up = _logManager.Logs.Count(l => l.EventType == KeyEventType.KeyUp);
-        int press = _logManager.Logs.Count(l => l.EventType == KeyEventType.KeyPress);
+        var stats = _logManager.GetStatistics(topKeyCount: 7);
 
-        lblTotalEvents.Text = $"Toplam Olay: {total}";
-        lblDownCount.Text = $"KeyDown: {down}";
-        lblUpCount.Text = $"KeyUp: {up}";
-        lblPressCount.Text = $"KeyPress: {press}";
-        lblLogCountStatus.Text = $"Kayıt: {total} adet";
+        lblTotalEvents.Text = $"Toplam Olay: {stats.Total}";
+        lblDownCount.Text = $"KeyDown: {stats.KeyDownCount}";
+        lblUpCount.Text = $"KeyUp: {stats.KeyUpCount}";
+        lblPressCount.Text = $"KeyPress: {stats.KeyPressCount}";
+        lblLogCountStatus.Text = $"Kayıt: {stats.Total} adet";
 
         // En sık kullanılan tuşlar
-        var top = _logManager.Logs
-            .Where(l => l.EventType == KeyEventType.KeyDown)
-            .GroupBy(l => l.KeyName)
-            .OrderByDescending(g => g.Count())
-            .Take(7);
-
         lstTopKeys.BeginUpdate();
         lstTopKeys.Items.Clear();
         int rank = 1;
-        foreach (var item in top)
+        foreach (var usage in stats.TopKeys)
         {
-            lstTopKeys.Items.Add($"{rank++}. {item.Key} ({item.Count()} kez)");
+            lstTopKeys.Items.Add($"{rank++}. {usage.KeyName} ({usage.Count} kez)");
         }
         lstTopKeys.EndUpdate();
     }
