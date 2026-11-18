@@ -5,10 +5,10 @@ partial class Form1
     private System.ComponentModel.IContainer components = null;
 
     private System.Windows.Forms.Panel topPanel;
-    private System.Windows.Forms.Button btnStart;
-    private System.Windows.Forms.Button btnStop;
-    private System.Windows.Forms.Button btnClear;
-    private System.Windows.Forms.Button btnExport;
+    private Controls.NoFocusButton btnStart;
+    private Controls.NoFocusButton btnStop;
+    private Controls.NoFocusButton btnClear;
+    private Controls.NoFocusButton btnExport;
     private System.Windows.Forms.Label lblStatusIndicator;
 
     private System.Windows.Forms.Panel filterPanel;
@@ -51,10 +51,10 @@ partial class Form1
     private void InitializeComponent()
     {
         topPanel = new System.Windows.Forms.Panel();
-        btnStart = new System.Windows.Forms.Button();
-        btnStop = new System.Windows.Forms.Button();
-        btnClear = new System.Windows.Forms.Button();
-        btnExport = new System.Windows.Forms.Button();
+        btnStart = new Controls.NoFocusButton();
+        btnStop = new Controls.NoFocusButton();
+        btnClear = new Controls.NoFocusButton();
+        btnExport = new Controls.NoFocusButton();
         lblStatusIndicator = new System.Windows.Forms.Label();
 
         filterPanel = new System.Windows.Forms.Panel();

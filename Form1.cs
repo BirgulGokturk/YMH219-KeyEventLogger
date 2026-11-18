@@ -25,34 +25,58 @@ public partial class Form1 : Form
 
     private void Form1_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (!_logManager.IsLogging) return;
+        if (!ShouldRecordKeys()) return;
 
-        // Arama kutusundayken tuşların normal çalışmasına engel olmamak için
-        var log = new KeyLogItem(KeyEventType.KeyDown, e.KeyCode, e.Control, e.Alt, e.Shift);
-        _logManager.AddLog(log);
-
-        AddLogToView(log);
-        UpdateStatisticsUI();
+        RecordLog(new KeyLogItem(KeyEventType.KeyDown, e.KeyCode, e.Control, e.Alt, e.Shift));
     }
 
     private void Form1_KeyUp(object? sender, KeyEventArgs e)
     {
-        if (!_logManager.IsLogging) return;
+        if (!ShouldRecordKeys()) return;
 
-        var log = new KeyLogItem(KeyEventType.KeyUp, e.KeyCode, e.Control, e.Alt, e.Shift);
-        _logManager.AddLog(log);
-
-        AddLogToView(log);
-        UpdateStatisticsUI();
+        RecordLog(new KeyLogItem(KeyEventType.KeyUp, e.KeyCode, e.Control, e.Alt, e.Shift));
     }
 
     private void Form1_KeyPress(object? sender, KeyPressEventArgs e)
     {
-        if (!_logManager.IsLogging) return;
+        if (!ShouldRecordKeys()) return;
 
-        var log = new KeyLogItem(e.KeyChar);
+        RecordLog(new KeyLogItem(e.KeyChar));
+    }
+
+    /// <summary>
+    /// Tab tuşu Windows tarafından "sonraki kontrole geç" komutu olarak işlenir ve KeyDown
+    /// olayı hiç oluşmaz (yalnızca KeyUp kaydediliyordu). ProcessCmdKey, tuş herhangi bir
+    /// kontrole ulaşmadan önce çağrıldığı için Tab burada KeyDown olarak kaydedilir ve
+    /// kayıt sırasında odağın başka kontrole kayması engellenir.
+    /// (Ok tuşları liste ve kutularda normal KeyDown olayı ürettiği için burada ele alınmaz.)
+    /// </summary>
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        if ((keyData & Keys.KeyCode) == Keys.Tab && ShouldRecordKeys())
+        {
+            bool ctrl = (keyData & Keys.Control) == Keys.Control;
+            bool alt = (keyData & Keys.Alt) == Keys.Alt;
+            bool shift = (keyData & Keys.Shift) == Keys.Shift;
+            RecordLog(new KeyLogItem(KeyEventType.KeyDown, Keys.Tab, ctrl, alt, shift));
+            return true;
+        }
+
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    /// <summary>
+    /// Kayıt açıksa ve kullanıcı arama/filtre alanlarına yazmıyorsa true döner.
+    /// Arama kutusuna yazılan harfler hem kayda girip hem de listeyi filtreliyordu.
+    /// </summary>
+    private bool ShouldRecordKeys()
+    {
+        return _logManager.IsLogging && !txtSearch.Focused && !cmbFilterType.Focused;
+    }
+
+    private void RecordLog(KeyLogItem log)
+    {
         _logManager.AddLog(log);
-
         AddLogToView(log);
         UpdateStatisticsUI();
     }
@@ -67,6 +91,9 @@ public partial class Form1 : Form
         btnStart.Enabled = false;
         btnStop.Enabled = true;
         UpdateStatusIndicator();
+
+        // Odak arama kutusunda kalırsa basılan tuşlar oraya yazılır; kayıt listesine taşınır
+        ActiveControl = listViewLogs;
     }
 
     private void BtnStop_Click(object? sender, EventArgs e)
