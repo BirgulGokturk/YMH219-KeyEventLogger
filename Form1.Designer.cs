@@ -1,17 +1,18 @@
-namespace YMH219_KeyEventLogger;
+﻿namespace YMH219_KeyEventLogger;
 
 partial class Form1
 {
     private System.ComponentModel.IContainer components = null;
 
     private System.Windows.Forms.Panel topPanel;
+    private System.Windows.Forms.FlowLayoutPanel flowTopButtons;
     private Controls.NoFocusButton btnStart;
     private Controls.NoFocusButton btnStop;
     private Controls.NoFocusButton btnClear;
     private Controls.NoFocusButton btnExport;
     private System.Windows.Forms.Label lblStatusIndicator;
 
-    private System.Windows.Forms.Panel filterPanel;
+    private System.Windows.Forms.FlowLayoutPanel filterPanel;
     private System.Windows.Forms.Label lblSearch;
     private System.Windows.Forms.TextBox txtSearch;
     private System.Windows.Forms.Label lblFilterType;
@@ -51,13 +52,14 @@ partial class Form1
     private void InitializeComponent()
     {
         topPanel = new System.Windows.Forms.Panel();
+        flowTopButtons = new System.Windows.Forms.FlowLayoutPanel();
         btnStart = new Controls.NoFocusButton();
         btnStop = new Controls.NoFocusButton();
         btnClear = new Controls.NoFocusButton();
         btnExport = new Controls.NoFocusButton();
         lblStatusIndicator = new System.Windows.Forms.Label();
 
-        filterPanel = new System.Windows.Forms.Panel();
+        filterPanel = new System.Windows.Forms.FlowLayoutPanel();
         lblSearch = new System.Windows.Forms.Label();
         txtSearch = new System.Windows.Forms.TextBox();
         lblFilterType = new System.Windows.Forms.Label();
@@ -84,6 +86,7 @@ partial class Form1
         lblLogCountStatus = new System.Windows.Forms.ToolStripStatusLabel();
 
         topPanel.SuspendLayout();
+        flowTopButtons.SuspendLayout();
         filterPanel.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)splitContainer).BeginInit();
         splitContainer.Panel1.SuspendLayout();
@@ -98,16 +101,29 @@ partial class Form1
         // 
         topPanel.BackColor = Color.FromArgb(245, 247, 250);
         topPanel.BorderStyle = BorderStyle.FixedSingle;
-        topPanel.Controls.Add(btnStart);
-        topPanel.Controls.Add(btnStop);
-        topPanel.Controls.Add(btnClear);
-        topPanel.Controls.Add(btnExport);
+        // Butonlar FlowLayoutPanel içinde soldan sağa dizilir, durum göstergesi sağa yaslanır.
+        // Sabit koordinat kullanılmadığı için ekran ölçeği (%125, %150) büyüse de
+        // gösterge butonların üzerine binmez.
+        topPanel.Controls.Add(flowTopButtons);
         topPanel.Controls.Add(lblStatusIndicator);
         topPanel.Dock = DockStyle.Top;
         topPanel.Location = new Point(0, 0);
         topPanel.Name = "topPanel";
+        topPanel.Padding = new Padding(10, 9, 10, 9);
         topPanel.Size = new Size(884, 55);
         topPanel.TabIndex = 0;
+
+        //
+        // flowTopButtons
+        //
+        flowTopButtons.Controls.Add(btnStart);
+        flowTopButtons.Controls.Add(btnStop);
+        flowTopButtons.Controls.Add(btnClear);
+        flowTopButtons.Controls.Add(btnExport);
+        flowTopButtons.Dock = DockStyle.Fill;
+        flowTopButtons.Name = "flowTopButtons";
+        flowTopButtons.TabIndex = 0;
+        flowTopButtons.WrapContents = false;
 
         // 
         // btnStart
@@ -116,7 +132,8 @@ partial class Form1
         btnStart.FlatStyle = FlatStyle.Flat;
         btnStart.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnStart.ForeColor = Color.White;
-        btnStart.Location = new Point(12, 10);
+        btnStart.AutoSize = true;
+        btnStart.Margin = new Padding(0, 0, 6, 0);
         btnStart.Name = "btnStart";
         btnStart.Size = new Size(125, 34);
         btnStart.TabIndex = 0;
@@ -132,7 +149,8 @@ partial class Form1
         btnStop.FlatStyle = FlatStyle.Flat;
         btnStop.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnStop.ForeColor = Color.White;
-        btnStop.Location = new Point(143, 10);
+        btnStop.AutoSize = true;
+        btnStop.Margin = new Padding(0, 0, 6, 0);
         btnStop.Name = "btnStop";
         btnStop.Size = new Size(125, 34);
         btnStop.TabIndex = 1;
@@ -147,7 +165,8 @@ partial class Form1
         btnClear.FlatStyle = FlatStyle.Flat;
         btnClear.Font = new Font("Segoe UI", 9F);
         btnClear.ForeColor = Color.Black;
-        btnClear.Location = new Point(274, 10);
+        btnClear.AutoSize = true;
+        btnClear.Margin = new Padding(0, 0, 6, 0);
         btnClear.Name = "btnClear";
         btnClear.Size = new Size(110, 34);
         btnClear.TabIndex = 2;
@@ -162,7 +181,8 @@ partial class Form1
         btnExport.FlatStyle = FlatStyle.Flat;
         btnExport.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
         btnExport.ForeColor = Color.White;
-        btnExport.Location = new Point(390, 10);
+        btnExport.AutoSize = true;
+        btnExport.Margin = new Padding(0, 0, 6, 0);
         btnExport.Name = "btnExport";
         btnExport.Size = new Size(140, 34);
         btnExport.TabIndex = 3;
@@ -173,14 +193,14 @@ partial class Form1
         // 
         // lblStatusIndicator
         // 
-        lblStatusIndicator.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        lblStatusIndicator.AutoEllipsis = true;
         lblStatusIndicator.BackColor = Color.FromArgb(230, 230, 230);
         lblStatusIndicator.BorderStyle = BorderStyle.FixedSingle;
+        lblStatusIndicator.Dock = DockStyle.Right;
         lblStatusIndicator.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
         lblStatusIndicator.ForeColor = Color.DimGray;
-        lblStatusIndicator.Location = new Point(620, 11);
         lblStatusIndicator.Name = "lblStatusIndicator";
-        lblStatusIndicator.Size = new Size(250, 32);
+        lblStatusIndicator.Size = new Size(250, 35);
         lblStatusIndicator.TabIndex = 4;
         lblStatusIndicator.Text = "○ KAYIT DURDURULDU";
         lblStatusIndicator.TextAlign = ContentAlignment.MiddleCenter;
@@ -188,6 +208,7 @@ partial class Form1
         // 
         // filterPanel
         // 
+        // FlowLayoutPanel: etiket ve kutular yan yana dizilir; yazı büyüse de birbirinin üstüne binmez
         filterPanel.BackColor = Color.White;
         filterPanel.Controls.Add(lblSearch);
         filterPanel.Controls.Add(txtSearch);
@@ -196,7 +217,9 @@ partial class Form1
         filterPanel.Dock = DockStyle.Top;
         filterPanel.Location = new Point(0, 55);
         filterPanel.Name = "filterPanel";
+        filterPanel.Padding = new Padding(12, 7, 12, 0);
         filterPanel.Size = new Size(884, 38);
+        filterPanel.WrapContents = false;
         filterPanel.TabIndex = 1;
 
         // 
@@ -204,7 +227,7 @@ partial class Form1
         // 
         lblSearch.AutoSize = true;
         lblSearch.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-        lblSearch.Location = new Point(14, 11);
+        lblSearch.Margin = new Padding(0, 4, 4, 0);
         lblSearch.Name = "lblSearch";
         lblSearch.Size = new Size(65, 15);
         lblSearch.TabIndex = 0;
@@ -213,7 +236,7 @@ partial class Form1
         // 
         // txtSearch
         // 
-        txtSearch.Location = new Point(85, 8);
+        txtSearch.Margin = new Padding(0, 0, 20, 0);
         txtSearch.Name = "txtSearch";
         txtSearch.PlaceholderText = "Tuş adı veya değiştirici ara...";
         txtSearch.Size = new Size(220, 23);
@@ -225,7 +248,7 @@ partial class Form1
         // 
         lblFilterType.AutoSize = true;
         lblFilterType.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-        lblFilterType.Location = new Point(325, 11);
+        lblFilterType.Margin = new Padding(0, 4, 4, 0);
         lblFilterType.Name = "lblFilterType";
         lblFilterType.Size = new Size(61, 15);
         lblFilterType.TabIndex = 2;
@@ -237,7 +260,7 @@ partial class Form1
         cmbFilterType.DropDownStyle = ComboBoxStyle.DropDownList;
         cmbFilterType.FormattingEnabled = true;
         cmbFilterType.Items.AddRange(new object[] { "Tümü", "KeyDown", "KeyUp", "KeyPress" });
-        cmbFilterType.Location = new Point(392, 8);
+        cmbFilterType.Margin = new Padding(0);
         cmbFilterType.Name = "cmbFilterType";
         cmbFilterType.Size = new Size(125, 23);
         cmbFilterType.TabIndex = 3;
@@ -440,13 +463,15 @@ partial class Form1
         Controls.Add(topPanel);
         Controls.Add(statusStrip);
         KeyPreview = true;
-        MinimumSize = new Size(720, 480);
+        MinimumSize = new Size(840, 480);
         Name = "Form1";
         StartPosition = FormStartPosition.CenterScreen;
         Text = "YMH219 - Key Event Logger (Eğitsel Klavye Olay Takipçisi)";
         KeyDown += Form1_KeyDown;
         KeyUp += Form1_KeyUp;
         KeyPress += Form1_KeyPress;
+        flowTopButtons.ResumeLayout(false);
+        flowTopButtons.PerformLayout();
         topPanel.ResumeLayout(false);
         filterPanel.ResumeLayout(false);
         filterPanel.PerformLayout();
